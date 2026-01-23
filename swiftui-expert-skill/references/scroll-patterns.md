@@ -94,10 +94,13 @@ struct FeedView: View {
 
 ### Basic Scroll Position
 
+**Avoid** - Storing scroll position directly triggers view updates on every scroll frame:
+
 ```swift
+// ❌ Bad Practice - causes unnecessary re-renders
 struct ContentView: View {
     @State private var scrollPosition: CGFloat = 0
-    
+
     var body: some View {
         ScrollView {
             content
@@ -117,6 +120,38 @@ struct ContentView: View {
         }
     }
 }
+```
+
+**Preferred** - Check scroll position and update a flag based on thresholds for smoother, more efficient scrolling:
+
+```swift
+// ✅ Good Practice - only updates state when crossing threshold
+struct ContentView: View {
+    @State private var startAnimation: Bool = false
+
+    var body: some View {
+        ScrollView {
+            content
+                .background(
+                    GeometryReader { geometry in
+                        Color.clear
+                            .preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: geometry.frame(in: .named("scroll")).minY
+                            )
+                    }
+                )
+        }
+        .coordinateSpace(name: "scroll")
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+            if value < -100 {
+                startAnimation = true
+            } else {
+                startAnimation = false
+            }
+        }
+    }
+}
 
 struct ScrollOffsetPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -131,7 +166,6 @@ struct ScrollOffsetPreferenceKey: PreferenceKey {
 ```swift
 struct ContentView: View {
     @State private var showHeader = true
-    @State private var lastScrollOffset: CGFloat = 0
     
     var body: some View {
         VStack(spacing: 0) {
@@ -154,15 +188,11 @@ struct ContentView: View {
             }
             .coordinateSpace(name: "scroll")
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-                let delta = offset - lastScrollOffset
-                withAnimation {
-                    if delta < -50 {  // Scrolling down
-                        showHeader = false
-                    } else if delta > 50 {  // Scrolling up
-                        showHeader = true
-                    }
+                if offset < -50 { // Scrolling down
+                   withAnimation { showHeader = false }
+                } else if offset > 50 { // Scrolling up
+                  withAnimation { showHeader = true }
                 }
-                lastScrollOffset = offset
             }
         }
     }
@@ -170,6 +200,8 @@ struct ContentView: View {
 ```
 
 ## Scroll Transitions and Effects
+
+> **iOS 17+**: All APIs in this section require iOS 17 or later.
 
 ### Scroll-Based Opacity
 
@@ -219,6 +251,8 @@ struct ParallaxHeader: View {
 ```
 
 ## Scroll Target Behavior
+
+> **iOS 17+**: All APIs in this section require iOS 17 or later.
 
 ### Paging ScrollView
 
