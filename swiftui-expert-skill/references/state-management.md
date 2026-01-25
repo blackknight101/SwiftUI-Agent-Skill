@@ -150,6 +150,43 @@ struct GoodView: View {
 }
 ```
 
+### $StateObject instantiation in View's initializer
+
+If your $StateObject creation depends on parameters passed in initializer: be aware of redundant allocations and hidden side effects. Kudos to Vincent Pradeilles.
+
+```swift
+// WRONG - creates new ViewModel instance on every view update
+struct MovieDetailsView: View {
+    
+    @StateObject var viewModel: MovieDetailsViewModel
+    
+    init(movie: Movie) {
+        let viewModel = MovieDetailsViewModel(movie: movie)
+        _viewModel = StateObject(wrappedValue: viewModel)      
+    }
+    
+    var body: some View {
+        // ...
+    }
+}
+
+// CORRECT - creation in @autoclosure prevents from multiple instantiations
+struct MovieDetailsView: View {
+    
+    @StateObject var viewModel: MovieDetailsViewModel
+    
+    init(movie: Movie) {
+        _viewModel = StateObject(
+            wrappedValue: MovieDetailsViewModel(movie: movie)
+        )      
+    }
+    
+    var body: some View {
+        // ...
+    }
+}
+```
+
 **Modern Alternative**: Use `@Observable` with `@State` instead of `ObservableObject` patterns.
 
 ## Don't Pass Values as @State
