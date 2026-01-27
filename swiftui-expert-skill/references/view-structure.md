@@ -200,6 +200,72 @@ MyContainer {
 }
 ```
 
+## ZStack vs overlay/background
+
+Use `ZStack` to **compose multiple peer views** that should be layered together and jointly define layout.
+
+Prefer `overlay` / `background` when you’re **decorating a primary view**.  
+Not primarily because they don’t affect layout size, but because they **express intent and improve readability**: the view being modified remains the clear layout anchor.
+
+A key difference is **size proposal behavior**:
+- In `overlay` / `background`, the child view implicitly adopts the size proposed to the parent when it doesn’t define its own size, making decorative attachments feel natural and predictable.
+- In `ZStack`, each child participates independently in layout, and no implicit size inheritance exists. This makes it better suited for peer composition, but less intuitive for simple decoration.
+
+Use `ZStack` (or another container) when the “decoration” **must explicitly participate in layout sizing**—for example, when reserving space, extending tappable/visible bounds, or preventing overlap with neighboring views.
+
+### Examples: Choosing Between overlay/background and ZStack
+
+```swift
+// GOOD - correct usage
+// Decoration that should not change layout sizing belongs in overlay/background
+Button("Continue") {
+    // action
+}
+.overlay(alignment: .trailing) {
+    Image(systemName: "lock.fill")
+        .padding(.trailing, 8)
+}
+
+// BAD - incorrect usage
+// Using ZStack when overlay/background is enough and layout sizing should remain anchored to the button
+ZStack(alignment: .trailing) {
+    Button("Continue") {
+        // action
+    }
+    Image(systemName: "lock.fill")
+        .padding(.trailing, 8)
+}
+
+// GOOD - correct usage
+// Capsule is taking a parent size for rendering
+HStack(spacing: 12) {
+    HStack {
+        Image(systemName: "tray")
+        Text("Inbox")
+    }
+    Text("Next")
+}
+.background {
+    Capsule()
+        .strokeBorder(.blue, lineWidth: 2)
+}
+
+// BAD - incorrect usage
+// overlay does not contribute to measured size, so the Capsule is taking all available space if no explicit size is set
+ZStack(alignment: .topTrailing) {
+    HStack(spacing: 12) {
+        HStack {
+            Image(systemName: "tray")
+            Text("Inbox")
+        }
+        Text("Next")
+    }
+
+    Capsule()
+        .strokeBorder(.blue, lineWidth: 2)
+}
+```
+
 ## Summary Checklist
 
 - [ ] Prefer modifiers over conditional views for state changes
