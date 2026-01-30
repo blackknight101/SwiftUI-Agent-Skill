@@ -110,6 +110,7 @@ This skill gives your AI coding tool practical SwiftUI guidance. It can:
 swiftui-expert-skill/
   SKILL.md
   references/
+    animation-patterns.md
     image-optimization.md - AsyncImage usage, downsampling, caching
     layout-best-practices.md - Layout patterns and GeometryReader alternatives
     liquid-glass.md - iOS 26+ glass effects and fallback patterns
